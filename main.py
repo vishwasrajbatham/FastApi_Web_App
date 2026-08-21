@@ -1,9 +1,13 @@
+from datetime import datetime
+
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.exceptions import RequestValidationError #for handling validation errors in frontend as in someone passes "hello" instead of int in the path parameter
 from fastapi.responses import JSONResponse # for handling validation errors in frontend
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException #fasftapi is built on top of starlette so we can use starlette exceptions as well to handle errors in frontend like someone enters an invalid path parameter
+
+from schemas import PostResponse, PostCreate
 
 app = FastAPI()
 
@@ -49,6 +53,19 @@ def get_post(request: Request, post_id: int):
                 {"post": post, "title": post["title"][:50]},
             )
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
+@app.post("/api/posts", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
+def create_post(post: PostCreate):
+    new_id = max(p["id"] for p in posts) + 1 if posts else 1
+    new_post = {
+        "id": new_id,
+        "author": post.author or "Anonymous",  # Default author if not provided
+        "title": post.title,
+        "content": post.content,
+        "date_posted": str(datetime.now().date()),  # Simplified for this example
+    }
+    posts.append(new_post)
+    return new_post
 
 ## StarletteHTTPException Handler
 @app.exception_handler(StarletteHTTPException)
@@ -96,11 +113,11 @@ def validation_exception_handler(request: Request, exception: RequestValidationE
     )
 
 # api routes
-@app.get("/api/posts")
+@app.get("/api/posts", response_model=list[PostResponse])
 def get_posts():
     return posts
 
-@app.get("/api/posts/{post_id}")
+@app.get("/api/posts/{post_id}", response_model=PostResponse)
 def get_post(post_id: int):
     for post in posts:
         if post["id"] == post_id:

@@ -21,11 +21,16 @@ class User(Base):
         default=None,
     ) 
 
-    posts: Mapped[list[Post]] = relationship(back_populates="author")
+    posts: Mapped[list[Post]] = relationship(back_populates="author", cascade="all, delete-orphan")
+
     #referrign to Post here which is defined below 
     #and back_populates is used to create a bidirectional relationship between the User 
     #and Post models. This means that we can access the posts of a user by using 
     #user.posts and we can access the author of a post by using post.author.
+
+    #cascade="all, delete-orphan" is used to specify that when a user is deleted,
+    #all of their posts should also be deleted. This is important to maintain data integrity and
+    #prevent orphaned posts from being left in the database.
 
     @property
     def image_path(self) -> str:
